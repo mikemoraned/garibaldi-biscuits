@@ -25,7 +25,7 @@ impl BorderFinder {
                     .map(|(x, y)| vec![x, y])
                     .flatten()
                     .collect::<Vec<u32>>();
-                return Some(flattened_border);
+                Some(flattened_border)
             }
             None => None,
         }
