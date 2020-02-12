@@ -1,4 +1,3 @@
-extern crate base64;
 extern crate console_error_panic_hook;
 extern crate image;
 #[macro_use]
@@ -26,14 +25,20 @@ pub struct BiscuitFinder {
 
 use image::{Rgba, RgbaImage};
 
-#[wasm_bindgen]
-impl BiscuitFinder {
-    pub fn new() -> BiscuitFinder {
-        console_error_panic_hook::set_once();
+impl Default for BiscuitFinder {
+    fn default() -> Self {
         BiscuitFinder {
             border_indexes: None,
             border_points: None,
         }
+    }
+}
+
+#[wasm_bindgen]
+impl BiscuitFinder {
+    pub fn new() -> Self {
+        console_error_panic_hook::set_once();
+        Self::default()
     }
 
     pub fn find_biscuits(
@@ -83,9 +88,13 @@ impl BiscuitFinder {
                 let mut border_indexes = Vec::with_capacity(num_labels);
                 let mut border_points = Vec::new();
                 let mut start_index: usize = 0;
-                for label_id in 1..=num_labels {
+                for (label_id, bounding_box) in bounding_boxes
+                    .iter()
+                    .enumerate()
+                    .take(num_labels + 1)
+                    .skip(1)
+                {
                     let foreground_color = Luma([label_id as u32]);
-                    let bounding_box = &bounding_boxes[label_id];
                     let (min_x, min_y, max_x, max_y) = (
                         bounding_box[0],
                         bounding_box[1],
@@ -106,11 +115,9 @@ impl BiscuitFinder {
                 }
                 self.border_indexes = Some(border_indexes);
                 self.border_points = Some(border_points);
-                return Ok("processed image".into());
+                Ok("processed image".into())
             }
-            None => {
-                return Err("couldn't read from raw".into());
-            }
+            None => Err("couldn't read from raw".into()),
         }
     }
 
