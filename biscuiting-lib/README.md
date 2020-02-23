@@ -1,6 +1,12 @@
 # Building
 
+Basic:
+
     wasm-pack build --scope mike_moran
+
+Optimised:
+
+    wasm-pack build --scope mike_moran --release
 
 # Sharing locally
 
@@ -11,7 +17,7 @@ In current dir:
 
 Elsewhere, where we want to use the locally published version:
 
-    npm link biscuiting-lib
+    npm link @mike_moran/biscuiting-lib
 
 # Publishing
 

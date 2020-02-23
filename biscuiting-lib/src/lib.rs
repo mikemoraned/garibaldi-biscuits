@@ -14,8 +14,9 @@ use wasm_bindgen::Clamped;
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
-mod border;
-use border::BorderFinder;
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+mod region_labelling;
 
 #[wasm_bindgen]
 pub struct BiscuitFinder {
@@ -38,6 +39,8 @@ impl Default for BiscuitFinder {
 impl BiscuitFinder {
     pub fn new() -> Self {
         console_error_panic_hook::set_once();
+        use web_sys::console;
+        console::log_1(&format!("BiscuitFinder version {}", VERSION).into());
         Self::default()
     }
 
@@ -50,13 +53,10 @@ impl BiscuitFinder {
         y_offset: f32,
         scale_down: f32,
     ) -> Result<String, JsValue> {
-        use image::{GenericImage, GrayImage, Luma};
+        use image::{GrayImage, Luma};
         use imageproc::definitions::Image;
         use imageproc::map::map_colors;
         use imageproc::region_labelling::{connected_components, Connectivity};
-        use std::cmp::{max, min};
-        use web_sys::console;
-
         let input_background_color = Rgba([255u8; 4]);
 
         match RgbaImage::from_raw(width, height, input.0) {
@@ -72,43 +72,19 @@ impl BiscuitFinder {
                     }
                 });
 
-                let mut labelled_image: Image<Luma<u32>> =
+                let labelled_image: Image<Luma<u32>> =
                     connected_components(&gray_image, Connectivity::Four, background_color);
-                let num_labels = (labelled_image.pixels().map(|p| p[0]).max().unwrap()) as usize;
-                let mut bounding_boxes = Vec::new();
-                bounding_boxes.resize_with(num_labels + 1, || vec![width, height, 0, 0]);
-                for (x, y, p) in labelled_image.enumerate_pixels() {
-                    let label_id = p[0] as usize;
-                    let current_bounding_box = &mut bounding_boxes[label_id];
-                    current_bounding_box[0] = min(x, current_bounding_box[0]);
-                    current_bounding_box[1] = min(y, current_bounding_box[1]);
-                    current_bounding_box[2] = max(x + 1, current_bounding_box[2]);
-                    current_bounding_box[3] = max(y + 1, current_bounding_box[3]);
-                }
-                let mut border_indexes = Vec::with_capacity(num_labels);
+                let contours = region_labelling::find_contours(Luma([0u32; 1]), &labelled_image);
+                let mut border_indexes = Vec::new();
                 let mut border_points = Vec::new();
                 let mut start_index: usize = 0;
-                for (label_id, bounding_box) in bounding_boxes
-                    .iter()
-                    .enumerate()
-                    .take(num_labels + 1)
-                    .skip(1)
-                {
-                    let foreground_color = Luma([label_id as u32]);
-                    let (min_x, min_y, max_x, max_y) = (
-                        bounding_box[0],
-                        bounding_box[1],
-                        bounding_box[2],
-                        bounding_box[3],
-                    );
-                    let sub_image =
-                        labelled_image.sub_image(min_x, min_y, max_x - min_x, max_y - min_y);
-                    let border = BorderFinder::find_in_image(foreground_color, &sub_image).unwrap();
-                    border_indexes.push(start_index + border.len());
-                    start_index += border.len();
-                    for chunk in border.chunks(2) {
-                        let x = x_offset + ((chunk[0] + min_x) as f32 / scale_down);
-                        let y = y_offset + ((chunk[1] + min_y) as f32 / scale_down);
+                for contour in contours {
+                    let indexes_used = contour.len() * 2;
+                    border_indexes.push(start_index + indexes_used);
+                    start_index += indexes_used;
+                    for point in contour {
+                        let x = x_offset + (point.x as f32 / scale_down);
+                        let y = y_offset + (point.y as f32 / scale_down);
                         border_points.push(x);
                         border_points.push(y);
                     }
@@ -151,6 +127,13 @@ impl BiscuitFinder {
 }
 
 impl BiscuitFinder {
+    pub fn border_indexes(&self) -> Result<Vec<usize>, String> {
+        match &self.border_indexes {
+            Some(vec) => Ok(vec.clone()),
+            None => panic!("no border points"),
+        }
+    }
+
     pub fn border_points(&self) -> Result<Vec<f32>, String> {
         match &self.border_points {
             Some(vec) => Ok(vec.clone()),
@@ -181,6 +164,8 @@ mod tests {
         assert_eq!(0, biscuit_finder.num_borders());
         let border_points = biscuit_finder.border_points();
         assert_eq!(Ok(vec![]), border_points);
+        let border_indexes = biscuit_finder.border_indexes();
+        assert_eq!(Ok(vec![]), border_indexes);
     }
 
     #[wasm_bindgen_test]
@@ -198,7 +183,9 @@ mod tests {
 
         assert_eq!(1, biscuit_finder.num_borders());
         let border_points = biscuit_finder.border_points();
-        assert_eq!(Ok(vec![0.0, 0.0, 0.0, 0.0]), border_points);
+        assert_eq!(Ok(vec![0.0, 0.0]), border_points);
+        let border_indexes = biscuit_finder.border_indexes();
+        assert_eq!(Ok(vec![2]), border_indexes);
     }
 
     #[wasm_bindgen_test]
@@ -222,10 +209,12 @@ mod tests {
             Ok(vec![1.0, 1.0, 2.0, 1.0, 2.0, 2.0, 1.0, 2.0]),
             border_points
         );
+        let border_indexes = biscuit_finder.border_indexes();
+        assert_eq!(Ok(vec![8]), border_indexes);
     }
 
     #[wasm_bindgen_test]
-    fn test_with_multiple_biscuits() {
+    fn test_with_multiple_single_pixel_biscuits() {
         let mut biscuit_finder = BiscuitFinder::new();
 
         let image = rgba_image!(
@@ -244,12 +233,45 @@ mod tests {
         let border_points = biscuit_finder.border_points();
         assert_eq!(
             Ok(vec![
-                1.0, 1.0, 1.0, 1.0, //
-                3.0, 1.0, 3.0, 1.0, //
-                1.0, 3.0, 1.0, 3.0, //
-                3.0, 3.0, 3.0, 3.0, //
+                1.0, 1.0, //
+                3.0, 1.0, //
+                1.0, 3.0, //
+                3.0, 3.0, //
             ]),
             border_points
         );
+        let border_indexes = biscuit_finder.border_indexes();
+        assert_eq!(Ok(vec![2, 4, 6, 8]), border_indexes);
+    }
+
+    #[wasm_bindgen_test]
+    fn test_with_multiple_multi_pixel_biscuits() {
+        let mut biscuit_finder = BiscuitFinder::new();
+
+        let image = rgba_image!(
+            [0,     0,   0, 255], [0,     0,   0, 255], [255, 255, 255, 255], [0,     0,   0, 255], [0,     0,   0, 255];
+            [0,     0,   0, 255], [0,     0,   0, 255], [255, 255, 255, 255], [0,     0,   0, 255], [0,     0,   0, 255];
+            [255, 255, 255, 255], [255, 255, 255, 255], [255, 255, 255, 255], [255, 255, 255, 255], [255, 255, 255, 255];
+            [0,     0,   0, 255], [0,     0,   0, 255], [255, 255, 255, 255], [0,     0,   0, 255], [0,     0,   0, 255];
+            [0,     0,   0, 255], [0,     0,   0, 255], [255, 255, 255, 255], [0,     0,   0, 255], [0,     0,   0, 255]);
+
+        let input = Clamped(image.to_vec());
+        let result = biscuit_finder.find_biscuits(5, 5, input, 0.0, 0.0, 1.0);
+
+        assert_eq!(Ok("processed image".into()), result);
+
+        assert_eq!(4, biscuit_finder.num_borders());
+        let border_points = biscuit_finder.border_points();
+        assert_eq!(
+            Ok(vec![
+                0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, //
+                3.0, 0.0, 4.0, 0.0, 4.0, 1.0, 3.0, 1.0, //
+                0.0, 3.0, 1.0, 3.0, 1.0, 4.0, 0.0, 4.0, //
+                3.0, 3.0, 4.0, 3.0, 4.0, 4.0, 3.0, 4.0, //
+            ]),
+            border_points
+        );
+        let border_indexes = biscuit_finder.border_indexes();
+        assert_eq!(Ok(vec![8, 16, 24, 32]), border_indexes);
     }
 }
