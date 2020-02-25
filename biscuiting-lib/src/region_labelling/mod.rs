@@ -29,7 +29,6 @@ where
                 colors_seen.insert(color);
                 let mut contour = Vec::new();
                 trace_contour(turtle::Turtle::new(x, y), image, color, &mut contour);
-                println!("Adding {:?}", contour);
                 contours.push(contour);
             }
         }
