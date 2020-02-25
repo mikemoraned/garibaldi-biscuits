@@ -16,7 +16,7 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-mod region_labelling;
+pub mod region_labelling;
 
 #[wasm_bindgen]
 pub struct BiscuitFinder {

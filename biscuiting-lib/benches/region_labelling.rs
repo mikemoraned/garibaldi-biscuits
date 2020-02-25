@@ -1,3 +1,4 @@
+use biscuiting_lib::region_labelling::find_contours;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 fn fibonacci(n: u64) -> u64 {
