@@ -9,35 +9,35 @@ use image::Luma;
 use biscuiting_lib::region_labelling::find_contours;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
-fn tiny_example_benchmark(c: &mut Criterion) {
+fn tiny_random_image(c: &mut Criterion) {
     let mut image = random_test_image(3, 3, 0u64);
 
     let background_color = Luma([0u32; 1]);
 
     let sub_image = image.sub_image(0, 0, image.width(), image.height());
-    c.bench_function("tiny_example_benchmark", |b| {
+    c.bench_function("tiny_random", |b| {
         b.iter(|| find_contours(black_box(background_color), &sub_image))
     });
 }
 
-fn medium_example_benchmark(c: &mut Criterion) {
+fn medium_random_image(c: &mut Criterion) {
     let mut image = random_test_image(100, 100, 0u64);
 
     let background_color = Luma([0u32; 1]);
 
     let sub_image = image.sub_image(0, 0, image.width(), image.height());
-    c.bench_function("medium_example_benchmark", |b| {
+    c.bench_function("medium_random", |b| {
         b.iter(|| find_contours(black_box(background_color), &sub_image))
     });
 }
 
-fn large_example_benchmark(c: &mut Criterion) {
+fn large_random_image(c: &mut Criterion) {
     let mut image = random_test_image(1000, 1000, 0u64);
 
     let background_color = Luma([0u32; 1]);
 
     let sub_image = image.sub_image(0, 0, image.width(), image.height());
-    c.bench_function("medium_example_benchmark", |b| {
+    c.bench_function("large_random", |b| {
         b.iter(|| find_contours(black_box(background_color), &sub_image))
     });
 }
@@ -61,5 +61,10 @@ fn random_test_image(width: u32, height: u32, seed: u64) -> TestImage {
     image
 }
 
-criterion_group!(benches, tiny_example_benchmark, medium_example_benchmark);
+criterion_group!(
+    benches,
+    tiny_random_image,
+    medium_random_image,
+    large_random_image
+);
 criterion_main!(benches);
