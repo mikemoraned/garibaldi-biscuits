@@ -5,6 +5,7 @@ extern crate rand;
 use image::GenericImage;
 use image::ImageBuffer;
 use image::Luma;
+use std::time::Duration;
 
 use biscuiting_lib::region_labelling::find_contours;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
@@ -26,20 +27,16 @@ fn medium_random_image(c: &mut Criterion) {
     let background_color = Luma([0u32; 1]);
 
     let sub_image = image.sub_image(0, 0, image.width(), image.height());
-    c.bench_function("medium_random", |b| {
+
+    let mut group = c.benchmark_group("custom_group");
+    group.measurement_time(Duration::from_secs(7000));
+    group.sample_size(500);
+
+    group.bench_function("medium_random", |b| {
         b.iter(|| find_contours(black_box(background_color), &sub_image))
     });
-}
 
-fn large_random_image(c: &mut Criterion) {
-    let mut image = random_test_image(1000, 1000, 0u64);
-
-    let background_color = Luma([0u32; 1]);
-
-    let sub_image = image.sub_image(0, 0, image.width(), image.height());
-    c.bench_function("large_random", |b| {
-        b.iter(|| find_contours(black_box(background_color), &sub_image))
-    });
+    group.finish();
 }
 
 type TestImage = ImageBuffer<Luma<u32>, Vec<u32>>;
@@ -65,6 +62,6 @@ criterion_group!(
     benches,
     tiny_random_image,
     medium_random_image,
-    large_random_image
+    // large_random_image
 );
 criterion_main!(benches);
