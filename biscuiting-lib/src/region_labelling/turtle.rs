@@ -22,6 +22,12 @@ impl Turtle {
         }
     }
 
+    pub fn reset(&mut self, x: u32, y: u32) {
+        self.x = x as i32;
+        self.y = y as i32;
+        self.direction = Direction::East;
+    }
+
     pub fn left(&self) -> Turtle {
         use Direction::*;
         match self.direction {

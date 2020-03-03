@@ -8,6 +8,10 @@ Optimised:
 
     wasm-pack build --scope mike_moran --release
 
+With features:
+
+    wasm-pack build --scope mike_moran --release -- --features "console_tracing"
+
 # Sharing locally
 
 In current dir:

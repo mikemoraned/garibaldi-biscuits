@@ -72,9 +72,14 @@ impl BiscuitFinder {
                     }
                 });
 
+                BiscuitFinder::time_with_label("connected_components");
                 let labelled_image: Image<Luma<u32>> =
                     connected_components(&gray_image, Connectivity::Four, background_color);
-                let contours = region_labelling::find_contours(Luma([0u32; 1]), &labelled_image);
+                BiscuitFinder::time_end_with_label("connected_components");
+                BiscuitFinder::time_with_label("find_contours");
+                let contours =
+                    region_labelling::find_contours_in_luma(Luma([0u32; 1]), &labelled_image);
+                BiscuitFinder::time_end_with_label("find_contours");
                 let mut border_indexes = Vec::new();
                 let mut border_points = Vec::new();
                 let mut start_index: usize = 0;
@@ -94,6 +99,22 @@ impl BiscuitFinder {
                 Ok("processed image".into())
             }
             None => Err("couldn't read from raw".into()),
+        }
+    }
+
+    fn time_with_label(message: &str) {
+        #[cfg(feature = "console_tracing")]
+        {
+            use web_sys::console;
+            console::time_with_label(message);
+        }
+    }
+
+    fn time_end_with_label(message: &str) {
+        #[cfg(feature = "console_tracing")]
+        {
+            use web_sys::console;
+            console::time_end_with_label(message);
         }
     }
 
