@@ -1,5 +1,5 @@
 use image::GenericImage;
-
+use std::collections::HashSet;
 mod turtle;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -19,17 +19,47 @@ where
     I: GenericImage,
     I::Pixel: std::cmp::Eq + std::hash::Hash,
 {
-    use std::collections::HashSet;
     let mut colors_seen = HashSet::new();
+    let mut points_seen = HashSet::new();
     let mut contours = Vec::new();
+    let mut turtle = turtle::Turtle::new(0, 0);
     for y in 0..image.height() {
         for x in 0..image.width() {
             let color = image.get_pixel(x, y);
             if !colors_seen.contains(&color) && color != background_color {
                 colors_seen.insert(color);
+                points_seen.clear();
                 let mut contour = Vec::new();
-                trace_contour(turtle::Turtle::new(x, y), image, color, &mut contour);
-                println!("Adding {:?}", contour);
+                turtle.reset(x, y);
+                trace_contour(&mut turtle, image, color, &mut contour, &mut points_seen);
+                contours.push(contour);
+            }
+        }
+    }
+    contours
+}
+
+use bit_set::BitSet;
+use image::Luma;
+use imageproc::definitions::Image;
+
+pub fn find_contours_in_luma(
+    background_color: Luma<u32>,
+    image: &Image<Luma<u32>>,
+) -> Vec<Vec<Point<u32>>> {
+    let mut colors_seen = BitSet::new();
+    let mut points_seen = HashSet::new();
+    let mut contours = Vec::new();
+    let mut turtle = turtle::Turtle::new(0, 0);
+    for y in 0..image.height() {
+        for x in 0..image.width() {
+            let color = image.get_pixel(x, y);
+            if !colors_seen.contains(color[0] as usize) && *color != background_color {
+                colors_seen.insert(color[0] as usize);
+                points_seen.clear();
+                let mut contour = Vec::new();
+                turtle.reset(x, y);
+                trace_contour_luma(&mut turtle, image, *color, &mut contour, &mut points_seen);
                 contours.push(contour);
             }
         }
@@ -46,10 +76,11 @@ where
         Some(start) => {
             let mut contour = Vec::new();
             trace_contour(
-                turtle::Turtle::new(start.x, start.y),
+                &mut turtle::Turtle::new(start.x, start.y),
                 image,
                 foreground_color,
                 &mut contour,
+                &mut HashSet::new(),
             );
             Some(contour)
         }
@@ -74,24 +105,51 @@ where
 }
 
 fn trace_contour<I>(
-    start: turtle::Turtle,
+    start: &mut turtle::Turtle,
     image: &I,
     foreground_color: I::Pixel,
     points: &mut Vec<Point<u32>>,
+    points_seen: &mut HashSet<Point<u32>>,
 ) where
     I: GenericImage,
     I::Pixel: std::cmp::Eq,
 {
-    use std::collections::HashSet;
     let start_point = Point::new(start.x as u32, start.y as u32);
     points.push(start_point);
-    let mut points_seen = HashSet::new();
     points_seen.insert(start_point);
 
     let mut next = start.left();
-    while next != start {
+    while next != *start {
         if is_in_bounds(next.x, next.y, image)
             && image.get_pixel(next.x as u32, next.y as u32) == foreground_color
+        {
+            let point = Point::new(next.x as u32, next.y as u32);
+            if !points_seen.contains(&point) {
+                points.push(point);
+                points_seen.insert(point);
+            }
+            next = next.left();
+        } else {
+            next = next.right();
+        }
+    }
+}
+
+fn trace_contour_luma(
+    start: &mut turtle::Turtle,
+    image: &Image<Luma<u32>>,
+    foreground_color: Luma<u32>,
+    points: &mut Vec<Point<u32>>,
+    points_seen: &mut HashSet<Point<u32>>,
+) {
+    let start_point = Point::new(start.x as u32, start.y as u32);
+    points.push(start_point);
+    points_seen.insert(start_point);
+
+    let mut next = start.left();
+    while next != *start {
+        if is_in_bounds(next.x, next.y, image)
+            && *image.get_pixel(next.x as u32, next.y as u32) == foreground_color
         {
             let point = Point::new(next.x as u32, next.y as u32);
             if !points_seen.contains(&point) {
