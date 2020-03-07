@@ -12,6 +12,11 @@ With features:
 
     wasm-pack build --scope mike_moran --release -- --features "console_tracing"
 
+# Testing
+
+    wasm-pack test --node
+    cargo test
+
 # Sharing locally
 
 In current dir:
