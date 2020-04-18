@@ -22,21 +22,30 @@ function App() {
 
   return (
     <MapBoxContextProviderFromEnvironment>
-      <div className="App container is-fluid">
-        <div className="columns">
-          <div className="column city-view">
-            <>
-              {cityService && <CityView service={cityService} />}
-              <div
-                style={{
-                  position: "fixed",
-                  top: "0px",
-                  padding: "10px"
-                }}
-              >
-                <CitySelector initiallyOpen={true} />
-              </div>
-            </>
+      <div className="App">
+        <nav className="navbar" role="navigation" aria-label="main navigation">
+          <div className="navbar-brand">
+            <a className="navbar-item" href="https://bulma.io">
+              Garibaldi Biscuits
+            </a>
+          </div>
+        </nav>
+        <div className="container is-fluid">
+          <div className="columns">
+            <div className="column city-view">
+              <>
+                {cityService && <CityView service={cityService} />}
+                <div
+                  style={{
+                    position: "fixed",
+                    top: "0px",
+                    padding: "10px",
+                  }}
+                >
+                  <CitySelector initiallyOpen={true} />
+                </div>
+              </>
+            </div>
           </div>
         </div>
       </div>
