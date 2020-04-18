@@ -5,6 +5,7 @@ import { useRef, useLayoutEffect, useState } from "react";
 import ReactMapGL from "react-map-gl";
 import { CanvasOverlay } from "react-map-gl";
 import { LngLatBounds } from "mapbox-gl";
+import { OpenLocationCode } from "open-location-code";
 
 function BoundingBoxOverlay({ boundingBox }) {
   function redraw({ width, height, ctx, isDragging, project, unproject }) {
@@ -41,15 +42,24 @@ function reticuleFromMapBounds(bounds) {
   const reticuleBounds = LngLatBounds.convert([
     [
       bounds.getWest() + indent * westEastExtent,
-      bounds.getNorth() + indent * northSouthExtent
+      bounds.getNorth() + indent * northSouthExtent,
     ],
     [
       bounds.getWest() + (1.0 - indent) * westEastExtent,
-      bounds.getNorth() + (1.0 - indent) * northSouthExtent
-    ]
+      bounds.getNorth() + (1.0 - indent) * northSouthExtent,
+    ],
   ]);
 
   return reticuleBounds;
+}
+
+function olcReticuleFromMap(map) {
+  const center = map.getCenter();
+  console.dir(center);
+  const [lng, lat] = center.toArray();
+  const olc_code = new OpenLocationCode().encode(lat, lng);
+  console.dir(olc_code);
+  return reticuleFromMapBounds(map.getBounds());
 }
 
 export function MapView({ city }) {
@@ -57,7 +67,7 @@ export function MapView({ city }) {
   const containerRef = useRef(null);
   const [containerDimensions, setContainerDimensions] = useState({
     width: 400,
-    height: 800
+    height: 800,
   });
   const [reticuleBounds, setReticuleBounds] = useState(null);
 
@@ -70,7 +80,7 @@ export function MapView({ city }) {
 
   const [viewport, setViewport] = useState({
     zoom: mapbox.default_zoom,
-    ...city.location
+    ...city.location,
   });
   function viewportUpdated(viewport) {
     const { zoom, latitude, longitude } = viewport;
@@ -80,9 +90,9 @@ export function MapView({ city }) {
   function onLoad({ target }) {
     const map = target;
     console.log("loaded");
-    setReticuleBounds(reticuleFromMapBounds(map.getBounds()));
+    setReticuleBounds(olcReticuleFromMap(map));
     map.on("moveend", () => {
-      setReticuleBounds(reticuleFromMapBounds(map.getBounds()));
+      setReticuleBounds(olcReticuleFromMap(map));
     });
   }
 
