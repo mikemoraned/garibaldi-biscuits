@@ -9,8 +9,8 @@ import { OpenLocationCode } from "open-location-code";
 import * as turf from "@turf/turf";
 
 const sizeSpec = {
-  width: 8,
-  height: 6,
+  width: 16,
+  height: 12,
   units: "kilometers",
 };
 let olcCode = null;
