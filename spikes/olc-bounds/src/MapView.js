@@ -13,6 +13,7 @@ const sizeSpec = {
   height: 6,
   units: "kilometers",
 };
+let olcCode = null;
 
 function BoundingBoxOverlay({ boundingBox, color }) {
   function redraw({ width, height, ctx, isDragging, project, unproject }) {
@@ -28,9 +29,9 @@ function BoundingBoxOverlay({ boundingBox, color }) {
     const topLeft = project(boundingBox.getNorthWest().toArray());
     const bottomRight = project(boundingBox.getSouthEast().toArray());
 
-    const summary = `${sizeSpec.width}x${sizeSpec.height} ${sizeSpec.units}`;
+    const summary = `${sizeSpec.width}x${sizeSpec.height} ${sizeSpec.units}, ${olcCode}`;
     console.dir(summary);
-    ctx.font = "small-caps 24px sans-serif";
+    ctx.font = "small-caps 20px sans-serif";
     ctx.fillText(summary, bottomRight[0], bottomRight[1] - 5);
     ctx.fill();
 
@@ -72,8 +73,8 @@ function olcReticuleFromMap(map) {
   const center = map.getCenter();
   console.dir(center);
   const [lng, lat] = center.toArray();
-  const olc_code = new OpenLocationCode().encode(lat, lng);
-  console.dir(olc_code);
+  olcCode = new OpenLocationCode().encode(lat, lng);
+  console.dir(olcCode);
 
   const point = turf.point([lng, lat]);
   const [minX, ignoreMinY, maxX, ignoreMaxY] = turf.bbox(
