@@ -29,10 +29,27 @@ function BoundingBoxOverlay({ boundingBox, color }) {
     const topLeft = project(boundingBox.getNorthWest().toArray());
     const bottomRight = project(boundingBox.getSouthEast().toArray());
 
+    ctx.font = "small-caps 15px sans-serif";
+    const ySummaryMargin = 5;
     const summary = `${sizeSpec.width}x${sizeSpec.height} ${sizeSpec.units}, ${olcCode}`;
-    console.dir(summary);
-    ctx.font = "small-caps 20px sans-serif";
-    ctx.fillText(summary, bottomRight[0], bottomRight[1] - 5);
+    const metrics = ctx.measureText(summary);
+    // console.dir(metrics);
+    const textHeight =
+      metrics.actualBoundingBoxAscent +
+      metrics.actualBoundingBoxDescent +
+      ySummaryMargin;
+    ctx.beginPath();
+    ctx.rect(
+      bottomRight[0] - 1,
+      bottomRight[1] - textHeight - ySummaryMargin,
+      topLeft[0] - bottomRight[0] + 2,
+      textHeight + ySummaryMargin
+    );
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.fillStyle = "white";
+    ctx.fillText(summary, bottomRight[0] + 1, bottomRight[1] - ySummaryMargin);
     ctx.fill();
 
     ctx.beginPath();
@@ -71,10 +88,10 @@ function reticuleFromMapBounds(bounds) {
 
 function olcReticuleFromMap(map) {
   const center = map.getCenter();
-  console.dir(center);
+  // console.dir(center);
   const [lng, lat] = center.toArray();
   olcCode = new OpenLocationCode().encode(lat, lng);
-  console.dir(olcCode);
+  // console.dir(olcCode);
 
   const point = turf.point([lng, lat]);
   const [minX, ignoreMinY, maxX, ignoreMaxY] = turf.bbox(
@@ -93,7 +110,7 @@ function olcReticuleFromMap(map) {
     [minX, minY],
   ]);
 
-  console.dir(reticuleBounds);
+  // console.dir(reticuleBounds);
 
   return reticuleBounds;
 }
