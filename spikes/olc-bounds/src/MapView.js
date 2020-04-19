@@ -2,7 +2,7 @@ import React from "react";
 import { useContext } from "react";
 import { MapBoxContext } from "./MapBoxContext";
 import { useRef, useLayoutEffect, useState } from "react";
-import ReactMapGL, { ScaleControl } from "react-map-gl";
+import ReactMapGL, { ScaleControl, NavigationControl } from "react-map-gl";
 import { CanvasOverlay } from "react-map-gl";
 import { LngLatBounds } from "mapbox-gl";
 import { OpenLocationCode } from "open-location-code";
@@ -172,6 +172,9 @@ export function MapView({ city }) {
         )}
         <div style={{ position: "absolute", bottom: 100, left: 20 }}>
           <ScaleControl maxWidth={80} unit="metric" />
+        </div>
+        <div style={{ position: "absolute", right: 0 }}>
+          <NavigationControl showCompass={false} />
         </div>
       </ReactMapGL>
     </div>
