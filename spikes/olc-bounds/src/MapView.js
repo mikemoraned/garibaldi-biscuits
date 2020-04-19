@@ -117,6 +117,15 @@ function olcReticuleFromMap(map) {
   return reticuleBounds;
 }
 
+function locationFromPlusCode(plusCode) {
+  const OLC = new OpenLocationCode();
+  const codeArea = OLC.decode(plusCode);
+  return {
+    latitude: codeArea.latitudeCenter,
+    longitude: codeArea.longitudeCenter,
+  };
+}
+
 export function MapView({ city }) {
   const mapbox = useContext(MapBoxContext);
   const containerRef = useRef(null);
@@ -136,7 +145,7 @@ export function MapView({ city }) {
 
   const [viewport, setViewport] = useState({
     zoom: mapbox.default_zoom,
-    ...city.location,
+    ...locationFromPlusCode(city.location.plus_code),
   });
   function viewportUpdated(viewport) {
     const { zoom, latitude, longitude } = viewport;
