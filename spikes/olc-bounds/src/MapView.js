@@ -2,9 +2,9 @@ import React from "react";
 import { useContext } from "react";
 import { MapBoxContext } from "./MapBoxContext";
 import { useRef, useLayoutEffect, useState } from "react";
-import ReactMapGL from "react-map-gl";
+import ReactMapGL, { ScaleControl } from "react-map-gl";
 import { CanvasOverlay } from "react-map-gl";
-import { LngLatBounds, ScaleControl } from "mapbox-gl";
+import { LngLatBounds } from "mapbox-gl";
 import { OpenLocationCode } from "open-location-code";
 import * as turf from "@turf/turf";
 
@@ -118,11 +118,6 @@ export function MapView({ city }) {
   function onLoad({ target }) {
     const map = target;
     console.log("loaded");
-    const scale = new ScaleControl({
-      maxWidth: 80,
-      unit: "metric",
-    });
-    map.addControl(scale);
 
     setReticuleBounds(reticuleFromMapBounds(map.getBounds()));
     setFixedReticuleBounds(olcReticuleFromMap(map));
@@ -148,6 +143,9 @@ export function MapView({ city }) {
         {fixedReticuleBounds && (
           <BoundingBoxOverlay boundingBox={fixedReticuleBounds} color="green" />
         )}
+        <div style={{ position: "absolute", bottom: 100, left: 20 }}>
+          <ScaleControl maxWidth={80} unit="metric" />
+        </div>
       </ReactMapGL>
     </div>
   );
