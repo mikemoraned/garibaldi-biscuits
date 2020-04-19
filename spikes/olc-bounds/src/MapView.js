@@ -90,10 +90,12 @@ function olcReticuleFromMap(map) {
   const center = map.getCenter();
   // console.dir(center);
   const [lng, lat] = center.toArray();
-  olcCode = new OpenLocationCode().encode(lat, lng);
-  // console.dir(olcCode);
+  const OLC = new OpenLocationCode();
+  olcCode = OLC.encode(lat, lng);
+  const codeArea = OLC.decode(olcCode);
+  console.dir(codeArea);
 
-  const point = turf.point([lng, lat]);
+  const point = turf.point([codeArea.longitudeCenter, codeArea.latitudeCenter]);
   const [minX, ignoreMinY, maxX, ignoreMaxY] = turf.bbox(
     turf.buffer(point, sizeSpec.width / 2, {
       units: sizeSpec.units,
