@@ -8,6 +8,12 @@ import { LngLatBounds } from "mapbox-gl";
 import { OpenLocationCode } from "open-location-code";
 import * as turf from "@turf/turf";
 
+const sizeSpec = {
+  width: 8,
+  height: 6,
+  units: "kilometers",
+};
+
 function BoundingBoxOverlay({ boundingBox, color }) {
   function redraw({ width, height, ctx, isDragging, project, unproject }) {
     const center = project(boundingBox.getCenter().toArray());
@@ -17,8 +23,17 @@ function BoundingBoxOverlay({ boundingBox, color }) {
     ctx.fillStyle = "green";
     ctx.fill();
 
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
     const topLeft = project(boundingBox.getNorthWest().toArray());
     const bottomRight = project(boundingBox.getSouthEast().toArray());
+
+    const summary = `${sizeSpec.width}x${sizeSpec.height} ${sizeSpec.units}`;
+    console.dir(summary);
+    ctx.font = "small-caps 24px sans-serif";
+    ctx.fillText(summary, bottomRight[0], bottomRight[1] - 5);
+    ctx.fill();
+
     ctx.beginPath();
     ctx.rect(
       topLeft[0],
@@ -27,7 +42,6 @@ function BoundingBoxOverlay({ boundingBox, color }) {
       bottomRight[1] - topLeft[1]
     );
     ctx.lineWidth = 3;
-    ctx.strokeStyle = color;
     ctx.stroke();
   }
 
@@ -60,12 +74,6 @@ function olcReticuleFromMap(map) {
   const [lng, lat] = center.toArray();
   const olc_code = new OpenLocationCode().encode(lat, lng);
   console.dir(olc_code);
-
-  const sizeSpec = {
-    width: 8,
-    height: 6,
-    units: "kilometers",
-  };
 
   const point = turf.point([lng, lat]);
   const [minX, ignoreMinY, maxX, ignoreMaxY] = turf.bbox(
