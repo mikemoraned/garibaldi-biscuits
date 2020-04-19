@@ -6,8 +6,9 @@ import ReactMapGL from "react-map-gl";
 import { CanvasOverlay } from "react-map-gl";
 import { LngLatBounds } from "mapbox-gl";
 import { OpenLocationCode } from "open-location-code";
+import * as turf from "@turf/turf";
 
-function BoundingBoxOverlay({ boundingBox }) {
+function BoundingBoxOverlay({ boundingBox, color }) {
   function redraw({ width, height, ctx, isDragging, project, unproject }) {
     const center = project(boundingBox.getCenter().toArray());
     ctx.clearRect(0, 0, width, height);
@@ -26,7 +27,7 @@ function BoundingBoxOverlay({ boundingBox }) {
       bottomRight[1] - topLeft[1]
     );
     ctx.lineWidth = 3;
-    ctx.strokeStyle = "red";
+    ctx.strokeStyle = color;
     ctx.stroke();
   }
 
@@ -59,7 +60,21 @@ function olcReticuleFromMap(map) {
   const [lng, lat] = center.toArray();
   const olc_code = new OpenLocationCode().encode(lat, lng);
   console.dir(olc_code);
-  return reticuleFromMapBounds(map.getBounds());
+
+  const point = turf.point([lng, lat]);
+  const radius = 5;
+  const buffered = turf.buffer(point, radius, { units: "kilometers" });
+  console.dir(buffered);
+  const [minX, minY, maxX, maxY] = turf.bbox(buffered);
+
+  const reticuleBounds = LngLatBounds.convert([
+    [maxX, maxY],
+    [minX, minY],
+  ]);
+
+  console.dir(reticuleBounds);
+
+  return reticuleBounds;
 }
 
 export function MapView({ city }) {
@@ -70,6 +85,7 @@ export function MapView({ city }) {
     height: 800,
   });
   const [reticuleBounds, setReticuleBounds] = useState(null);
+  const [fixedReticuleBounds, setFixedReticuleBounds] = useState(null);
 
   useLayoutEffect(() => {
     const { width, height } = containerRef.current.getBoundingClientRect();
@@ -90,9 +106,11 @@ export function MapView({ city }) {
   function onLoad({ target }) {
     const map = target;
     console.log("loaded");
-    setReticuleBounds(olcReticuleFromMap(map));
+    setReticuleBounds(reticuleFromMapBounds(map.getBounds()));
+    setFixedReticuleBounds(olcReticuleFromMap(map));
     map.on("moveend", () => {
-      setReticuleBounds(olcReticuleFromMap(map));
+      setReticuleBounds(reticuleFromMapBounds(map.getBounds()));
+      setFixedReticuleBounds(olcReticuleFromMap(map));
     });
   }
 
@@ -106,7 +124,12 @@ export function MapView({ city }) {
         mapboxApiAccessToken={mapbox.access_token}
         onLoad={onLoad}
       >
-        {reticuleBounds && <BoundingBoxOverlay boundingBox={reticuleBounds} />}
+        {/* {reticuleBounds && (
+          <BoundingBoxOverlay boundingBox={reticuleBounds} color="red" />
+        )} */}
+        {fixedReticuleBounds && (
+          <BoundingBoxOverlay boundingBox={fixedReticuleBounds} color="green" />
+        )}
       </ReactMapGL>
     </div>
   );
