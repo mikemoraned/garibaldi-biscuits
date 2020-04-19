@@ -9,8 +9,8 @@ import { OpenLocationCode } from "open-location-code";
 import * as turf from "@turf/turf";
 
 const sizeSpec = {
-  width: 16,
-  height: 12,
+  width: 12,
+  height: 9,
   units: "kilometers",
 };
 let olcCode = null;
@@ -145,11 +145,12 @@ export function MapView({ city }) {
     const map = target;
     console.log("loaded");
 
-    setReticuleBounds(reticuleFromMapBounds(map.getBounds()));
-    setFixedReticuleBounds(olcReticuleFromMap(map));
+    const desiredBounds = olcReticuleFromMap(map);
+    setFixedReticuleBounds(desiredBounds);
+    map.fitBounds(desiredBounds, { padding: 20, maxZoom: 15 });
     map.on("moveend", () => {
-      setReticuleBounds(reticuleFromMapBounds(map.getBounds()));
-      setFixedReticuleBounds(olcReticuleFromMap(map));
+      const desiredBounds = olcReticuleFromMap(map);
+      setFixedReticuleBounds(desiredBounds);
     });
   }
 
