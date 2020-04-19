@@ -4,7 +4,7 @@ import { MapBoxContext } from "./MapBoxContext";
 import { useRef, useLayoutEffect, useState } from "react";
 import ReactMapGL from "react-map-gl";
 import { CanvasOverlay } from "react-map-gl";
-import { LngLatBounds } from "mapbox-gl";
+import { LngLatBounds, ScaleControl } from "mapbox-gl";
 import { OpenLocationCode } from "open-location-code";
 import * as turf from "@turf/turf";
 
@@ -61,11 +61,23 @@ function olcReticuleFromMap(map) {
   const olc_code = new OpenLocationCode().encode(lat, lng);
   console.dir(olc_code);
 
+  const sizeSpec = {
+    width: 8,
+    height: 6,
+    units: "kilometers",
+  };
+
   const point = turf.point([lng, lat]);
-  const radius = 5;
-  const buffered = turf.buffer(point, radius, { units: "kilometers" });
-  console.dir(buffered);
-  const [minX, minY, maxX, maxY] = turf.bbox(buffered);
+  const [minX, ignoreMinY, maxX, ignoreMaxY] = turf.bbox(
+    turf.buffer(point, sizeSpec.width / 2, {
+      units: sizeSpec.units,
+    })
+  );
+  const [ignoreMinX, minY, ignoreMaxX, maxY] = turf.bbox(
+    turf.buffer(point, sizeSpec.height / 2, {
+      units: sizeSpec.units,
+    })
+  );
 
   const reticuleBounds = LngLatBounds.convert([
     [maxX, maxY],
@@ -106,6 +118,12 @@ export function MapView({ city }) {
   function onLoad({ target }) {
     const map = target;
     console.log("loaded");
+    const scale = new ScaleControl({
+      maxWidth: 80,
+      unit: "metric",
+    });
+    map.addControl(scale);
+
     setReticuleBounds(reticuleFromMapBounds(map.getBounds()));
     setFixedReticuleBounds(olcReticuleFromMap(map));
     map.on("moveend", () => {
