@@ -40,13 +40,19 @@ const cities = [
       plus_code: "9C3XGV4C+WV",
     },
   },
+  {
+    name: "Edinburgh",
+    location: {
+      plus_code: "9C7RXR36+8M",
+    },
+  },
 ];
 
 function App() {
   return (
     <MapBoxContextProviderFromEnvironment>
       <div>
-        <MapView city={cities[3]} />
+        <MapView city={cities[0]} />
       </div>
     </MapBoxContextProviderFromEnvironment>
   );
