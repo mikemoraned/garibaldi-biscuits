@@ -9,6 +9,7 @@ import { MapBoxContextProviderFromEnvironment } from "./MapBoxContext";
 import { useService } from "@xstate/react";
 import { service } from "./Machine";
 import { lazyLoader } from "./BiscuitsOverlay";
+import { Navigation } from "./Navigation";
 
 dotenv.config();
 
@@ -22,21 +23,24 @@ function App() {
 
   return (
     <MapBoxContextProviderFromEnvironment>
-      <div className="App container is-fluid">
-        <div className="columns">
-          <div className="column city-view">
-            <>
-              {cityService && <CityView service={cityService} />}
-              <div
-                style={{
-                  position: "fixed",
-                  top: "0px",
-                  padding: "10px"
-                }}
-              >
-                <CitySelector initiallyOpen={true} />
-              </div>
-            </>
+      <div className="App">
+        <Navigation />
+        <div className="container is-fluid">
+          <div className="columns">
+            <div className="column city-view">
+              <>
+                {cityService && <CityView service={cityService} />}
+                <div
+                  style={{
+                    position: "fixed",
+                    top: "50px",
+                    padding: "10px",
+                  }}
+                >
+                  <CitySelector initiallyOpen={true} />
+                </div>
+              </>
+            </div>
           </div>
         </div>
       </div>
