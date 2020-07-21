@@ -18,33 +18,71 @@ function reticuleFromMapBounds(bounds) {
   const reticuleBounds = LngLatBounds.convert([
     [
       bounds.getWest() + indent * westEastExtent,
-      bounds.getNorth() + indent * northSouthExtent
+      bounds.getNorth() + indent * northSouthExtent,
     ],
     [
       bounds.getWest() + (1.0 - indent) * westEastExtent,
-      bounds.getNorth() + (1.0 - indent) * northSouthExtent
-    ]
+      bounds.getNorth() + (1.0 - indent) * northSouthExtent,
+    ],
   ]);
 
   return reticuleBounds;
 }
 
+function ToggleControl({ toggles }) {
+  return (
+    <>
+      <div className="buttons is-hidden-tablet are-small has-addons">
+        {toggles.map((t) => {
+          return (
+            <button
+              key={t.name.short}
+              className={`button is-info ${t.value ? "" : "is-inverted"}`}
+              onClick={() => t.setter(!t.value)}
+            >
+              {t.name.short}
+            </button>
+          );
+        })}
+      </div>
+      <div className="buttons is-hidden-mobile has-addons">
+        {toggles.map((t) => {
+          return (
+            <button
+              key={t.name.full}
+              className={`button is-info ${t.value ? "" : "is-inverted"}`}
+              onClick={() => t.setter(!t.value)}
+            >
+              {t.name.full}
+            </button>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
 export function MapView({ city }) {
+  const [showStreets, setShowStreets] = useState(false);
+  const [showBackgroundStreets, setShowBackgroundStreets] = useState(true);
+  const [showBackgroundWater, setShowBackgroundWater] = useState(true);
+  const [showBiscuits, setShowBiscuits] = useState(true);
+
   const mapbox = useContext(MapBoxContext);
   const containerRef = useRef(null);
   const [containerDimensions, setContainerDimensions] = useState({
     width: 400,
-    height: 800
+    height: 800,
   });
   const [reticuleBounds, setReticuleBounds] = useState(null);
 
   const [
     reticuleBoundsWaterFeatureLoader,
-    setReticuleBoundsWaterFeatureLoader
+    setReticuleBoundsWaterFeatureLoader,
   ] = useState(null);
   const [
     reticuleBoundsFeatureLoader,
-    setReticuleBoundsFeatureLoader
+    setReticuleBoundsFeatureLoader,
   ] = useState(null);
   const [featureLoader, setFeatureLoader] = useState(null);
 
@@ -57,7 +95,7 @@ export function MapView({ city }) {
 
   const [viewport, setViewport] = useState({
     zoom: mapbox.default_zoom,
-    ...city.location
+    ...city.location,
   });
   function viewportUpdated(viewport) {
     const { zoom, latitude, longitude } = viewport;
@@ -79,13 +117,13 @@ export function MapView({ city }) {
       "secondary_link",
       "tertiary",
       "tertiary_link",
-      "track"
+      "track",
     ];
     const reticule = reticuleFromMapBounds(map.getBounds());
     setFeatureLoader(() => {
       return () => {
         return map.queryRenderedFeatures({
-          filter
+          filter,
         });
       };
     });
@@ -95,10 +133,10 @@ export function MapView({ city }) {
         return map.queryRenderedFeatures(
           [
             map.project(reticule.getNorthEast().toArray()),
-            map.project(reticule.getSouthWest().toArray())
+            map.project(reticule.getSouthWest().toArray()),
           ],
           {
-            layers: ["water"]
+            layers: ["water"],
           }
         );
       };
@@ -108,10 +146,10 @@ export function MapView({ city }) {
         return map.queryRenderedFeatures(
           [
             map.project(reticule.getNorthEast().toArray()),
-            map.project(reticule.getSouthWest().toArray())
+            map.project(reticule.getSouthWest().toArray()),
           ],
           {
-            filter
+            filter,
           }
         );
       };
@@ -141,20 +179,59 @@ export function MapView({ city }) {
           <Suspense fallback={<div></div>}>
             {reticuleBounds &&
               reticuleBoundsFeatureLoader != null &&
-              reticuleBoundsWaterFeatureLoader != null && (
+              reticuleBoundsWaterFeatureLoader != null &&
+              (showBackgroundStreets ||
+                showBackgroundWater ||
+                showBiscuits) && (
                 <BiscuitsOverlay
                   boundingBox={reticuleBounds}
                   featureLoader={reticuleBoundsFeatureLoader}
                   waterFeatureLoader={reticuleBoundsWaterFeatureLoader}
+                  showBackgroundStreets={showBackgroundStreets}
+                  showBackgroundWater={showBackgroundWater}
+                  showBiscuits={showBiscuits}
                 />
               )}
           </Suspense>
-          {reticuleBounds && featureLoader != null && (
+          {reticuleBounds && featureLoader != null && showStreets && (
             <FeatureOverlay
               boundingBox={reticuleBounds}
               featureLoader={featureLoader}
             />
           )}
+          <div style={{ position: "absolute", top: 0, right: 0 }}>
+            <ToggleControl
+              toggles={[
+                {
+                  name: {
+                    full: "Streets",
+                    short: "S",
+                  },
+
+                  value: showStreets,
+                  setter: setShowStreets,
+                },
+                {
+                  name: {
+                    full: "Bg: Streets",
+                    short: "Bg: S",
+                  },
+                  value: showBackgroundStreets,
+                  setter: setShowBackgroundStreets,
+                },
+                {
+                  name: { full: "Bg: Water", short: "Bg: W" },
+                  value: showBackgroundWater,
+                  setter: setShowBackgroundWater,
+                },
+                {
+                  name: { full: "Biscuits", short: "B" },
+                  value: showBiscuits,
+                  setter: setShowBiscuits,
+                },
+              ]}
+            />
+          </div>
         </>
       </ReactMapGL>
     </div>
