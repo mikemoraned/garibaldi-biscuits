@@ -8,7 +8,7 @@ export function lazyLoader() {
   console.time("loading biscuiting libs");
   return Promise.all([
     import("@mike_moran/biscuiting-lib"),
-    import("@mike_moran/biscuiting-lib/biscuiting_lib_bg"),
+    import("@mike_moran/biscuiting-lib/biscuiting_lib_bg.wasm"),
   ]).then(([biscuiting_lib, biscuiting_lib_bg]) => {
     console.timeEnd("loading biscuiting libs");
     return bindBiscuitsOverlay({
