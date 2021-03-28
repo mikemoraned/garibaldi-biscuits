@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@mike_moran/biscuiting-lib": "^0.11.13",
+    "@mike_moran/biscuiting-lib": "^0.12.1",
     "@xstate/react": "^0.8.1",
     "bulma": "^0.8.2",
     "d3-geo": "^1.11.9",
